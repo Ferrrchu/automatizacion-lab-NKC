@@ -26,31 +26,35 @@ ledRojo.direction = digitalio.Direction.OUTPUT
 ledNaranja = digitalio.DigitalInOut(board.GP15)   
 ledNaranja.direction = digitalio.Direction.OUTPUT 
 
+
+# Variables para temporización no bloqueante
+intervalo_lectura = 2.0  # segundos
+ultimo_tiempo_lectura = time.monotonic()
+
 # Bucle principal para leer los datos
 while True:
-    try:
-        # Intenta leer la temperatura y la humedad
-        temperatura = sensorTemperatura.temperature #Lee la temperatura en °C
-        humedad = sensorTemperatura.humidity #Lee la humedad relativa en %
-        
-        # Imprimir los valores en la consola
-        print(f"Temperatura: {temperatura}°C")
-        print(f"Humedad: {humedad}%")
+    ahora = time.monotonic()
 
-    except RuntimeError as error:
-        # Manejar errores si la lectura falla (común al principio)
-        print(error.args[0])
-        time.sleep(2.0)
-        continue
+    # Leer sensor DHT11 cada intervalo_lectura segundos
+    if ahora - ultimo_tiempo_lectura >= intervalo_lectura:
+        try:
+            temperatura = sensorTemperatura.temperature
+            humedad = sensorTemperatura.humidity
+            print(f"Temperatura: {temperatura}°C")
+            print(f"Humedad: {humedad}%")
+        except RuntimeError as error:
+            print(error.args[0])
+        ultimo_tiempo_lectura = ahora
 
     valor = sensorInfrarojo.value
-    detectado = (valor == False)   # ajusta si tu módulo es al revés
+    detectado = (valor == False)
     if detectado:
+        for i in range(5):
+            ledNaranja.value = True
+            time.sleep(0.2)  # Este sigue siendo bloqueante, pero solo para el parpadeo
+            ledNaranja.value = False
+            time.sleep(0.2)
         print("Obstáculo DETECTADO")
-        ledNaranja.value = (sensorInfrarojo.value == False)
-        time.sleep(2.0)
-        ledNaranja.value = False
-        continue
+        # No uses continue, así el bucle sigue revisando el tiempo
 
-    # Esperar 2 segundos antes de la siguiente lectura, los DHT11 no deben leerse más de ~1 vez por segundo; 2 s es una práctica segura para lecturas estables.
-    time.sleep(2.0)
+    # No hay time.sleep() general aquí, el bucle es "no bloqueante"
