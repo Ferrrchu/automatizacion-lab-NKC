@@ -26,6 +26,55 @@ ledRojo.direction = digitalio.Direction.OUTPUT
 ledNaranja = digitalio.DigitalInOut(board.GP15)   
 ledNaranja.direction = digitalio.Direction.OUTPUT 
 
+def alarmaTemperatura(temperatura):
+    ledAzul.value = False
+    ledVerde.value = False
+    ledBlanco.value = False
+    ledAmarillo.value = False
+    ledRojo.value = False
+
+    if temperatura <= 25:
+        ledAzul.value = True
+        print("ALERTA: Temperatura mínima")
+    elif 25 < temperatura < 26:
+        ledVerde.value = True
+        print("ALERTA: Temperatura intermedia-baja")
+    elif 26 <= temperatura <= 27:
+        ledBlanco.value = True
+        print("ALERTA: Temperatura estándar")
+    elif 27 < temperatura < 28:
+        ledAmarillo.value = True
+        print("ALERTA: Temperatura intermedia-alta")
+    elif temperatura >= 28:
+        ledRojo.value = True
+        print("ALERTA: Temperatura máxima")
+    else:
+        print("Valores fuera de rango definidos.")
+
+def alarmaHumedad(humedad):
+    ledAzul.value = False
+    ledVerde.value = False
+    ledBlanco.value = False
+    ledAmarillo.value = False
+    ledRojo.value = False
+    
+    if humedad <= 40:
+        ledAzul.value = True
+        print("ALERTA: humedad mínima")
+    elif 40 < humedad <= 45:
+        ledVerde.value = True
+        print("ALERTA: humedad intermedia-baja")
+    elif 45 < humedad <= 50:
+        ledBlanco.value = True
+        print("ALERTA: humedad estándar")
+    elif 50 < humedad <= 55:
+        ledAmarillo.value = True
+        print("ALERTA: humedad intermedia-alta")
+    elif humedad > 55:
+        ledRojo.value = True
+        print("ALERTA: humedad máxima")
+    else:
+        print("Valores fuera de rango definidos.")
 
 # Variables para temporización no bloqueante
 intervalo_lectura = 2.0  # segundos
