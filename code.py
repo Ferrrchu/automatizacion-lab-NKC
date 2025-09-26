@@ -31,6 +31,12 @@ ledNaranja.direction = digitalio.Direction.OUTPUT
 intervalo_lectura = 2.0  # segundos
 ultimo_tiempo_lectura = time.monotonic()
 
+# Variables para parpadeo no bloqueante
+parpadeando = False
+fin_parpadeo = 0
+ultimo_cambio = 0
+intervalo = 0.2
+
 # Bucle principal para leer los datos
 while True:
     ahora = time.monotonic()
@@ -48,13 +54,17 @@ while True:
 
     valor = sensorInfrarojo.value
     detectado = (valor == False)
-    if detectado:
-        for i in range(5):
-            ledNaranja.value = True
-            time.sleep(0.2)  # Este sigue siendo bloqueante, pero solo para el parpadeo
-            ledNaranja.value = False
-            time.sleep(0.2)
-        print("Obstáculo DETECTADO")
-        # No uses continue, así el bucle sigue revisando el tiempo
+    if detectado and not parpadeando:
+        parpadeando = True
+        fin_parpadeo = ahora + 5
+        ultimo_cambio = ahora
+        ledNaranja.value = True
+        print("Intruso DETECTADO")
 
-    # No hay time.sleep() general aquí, el bucle es "no bloqueante"
+    if parpadeando:
+        if ahora - ultimo_cambio >= intervalo:
+            ledNaranja.value = not ledNaranja.value
+            ultimo_cambio = ahora
+        if ahora >= fin_parpadeo:
+            parpadeando = False
+            ledNaranja.value = False
