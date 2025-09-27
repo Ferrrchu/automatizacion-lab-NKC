@@ -26,6 +26,14 @@ ledRojo.direction = digitalio.Direction.OUTPUT
 ledNaranja = digitalio.DigitalInOut(board.GP15)   
 ledNaranja.direction = digitalio.Direction.OUTPUT
 
+# Anodo - D1
+segmento1 = digitalio.DigitalInOut(board.GP9)   
+segmento1.direction = digitalio.Direction.OUTPUT
+
+# Catodo - D2
+segmento2 = digitalio.DigitalInOut(board.GP5)   
+segmento2.direction = digitalio.Direction.OUTPUT
+
 # Variables para controlar cuándo mostrar mensajes de alarma
 rango_temperatura_anterior = None
 rango_humedad_anterior = None
@@ -158,8 +166,6 @@ while True:
     elif comando == "humedad":
         modoLectura = False
         print("modo lectura HUMEDAD activado")
-    else: 
-        print("Comando no reconocido. Comandos válidos: activar, desactivar, temperatura, humedad")
 
     # Leer sensor DHT11 cada intervalo_lectura segundos
     if ahora - ultimo_tiempo_lectura >= intervalo_lectura:
@@ -194,3 +200,6 @@ while True:
         if ahora >= fin_parpadeo:
             parpadeando = False
             ledNaranja.value = False
+    
+    segmento1.value = False
+    segmento2.value = True
