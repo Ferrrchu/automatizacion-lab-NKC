@@ -85,7 +85,6 @@ ultimo_tiempo_lectura = time.monotonic()
 
 # Variables para parpadeo no bloqueante
 parpadeando = False
-fin_parpadeo = 0
 ultimo_cambio = 0
 intervalo = 0.2
 
@@ -105,8 +104,8 @@ def inicializarPinesDisplay(pinesDisplay,anodo):
 pinesCC = inicializarPinesDisplay(pinesXsegmentoCC,False)
 pinesCA = inicializarPinesDisplay(pinesXsegmentoCA,True)
 
-def mostrarLetra(letra, anodo):
-    patron = segmentos[letra]
+def mostrarCaracter(caracter, anodo):
+    patron = segmentos[caracter]
     if anodo == True:                           
         for pin, encendido in zip(pinesCA, patron):
             pin.value = not encendido
@@ -116,6 +115,7 @@ def mostrarLetra(letra, anodo):
     return
 
 def mensajeDisplay(mensaje):
+    time.sleep(0.3)
     if len(mensaje) < 2:
         mensaje += ' '  # Asegura al menos dos caracteres
     for i in range(len(mensaje)):
@@ -124,12 +124,20 @@ def mensajeDisplay(mensaje):
             letra2 = ' ' # Si el tamaño del mensaje es impar, el último carácter se muestra solo
         else:
             letra2 = mensaje[i+1]
-        mostrarLetra(letra1, True)
-        mostrarLetra(letra2, False)
+        mostrarCaracter(letra1, True)
+        mostrarCaracter(letra2, False)
         time.sleep(0.3)
-    time.sleep(0.3)
-    mostrarLetra(' ', True) #limpiamos los displays :P
-    mostrarLetra(' ', False)
+    mostrarCaracter(' ', True) #limpiamos los displays :P
+    mostrarCaracter(' ', False)
+
+def mostrarTemperaturaHumedad(valor):
+    valorTruncado = str(int(valor))
+    if len(valorTruncado) < 2:
+        valorTruncado += ' ' 
+    valor1 = valorTruncado[0]
+    valor2 = valorTruncado[1]
+    mostrarCaracter(valor1, True)
+    mostrarCaracter(valor2, False)
 
 def alarmaTemperatura(temperatura):
     global rango_temperatura_anterior
@@ -145,12 +153,12 @@ def alarmaTemperatura(temperatura):
         ledAzul.value = True
         ledVerde.value = True
         ledBlanco.value = True
-        mensaje = "ALERTA: Temperatura mínima"
+        mensaje = "ALERTA: Temperatura extremadamente baja"
     elif 25 < temperatura < 26:
         rango_actual = "intermedia-baja"
         ledVerde.value = True
         ledBlanco.value = True
-        mensaje = "ALERTA: Temperatura intermedia-baja"
+        mensaje = "ALERTA: Temperatura baja"
     elif 26 <= temperatura <= 27:
         rango_actual = "normal"
         ledBlanco.value = True
@@ -159,13 +167,13 @@ def alarmaTemperatura(temperatura):
         rango_actual = "intermedia-alta"
         ledBlanco.value = True
         ledAmarillo.value = True
-        mensaje = "ALERTA: Temperatura intermedia-alta"
+        mensaje = "ALERTA: Temperatura alta"
     elif temperatura >= 28:
         rango_actual = "maxima"
         ledBlanco.value = True
         ledAmarillo.value = True
         ledRojo.value = True
-        mensaje = "ALERTA: Temperatura máxima"
+        mensaje = "ALERTA: Temperatura extremadamente alta"
     else:
         rango_actual = "fuera-rango"
         mensaje = "Valores fuera de rango definidos."
@@ -225,6 +233,20 @@ def leer_comando():
         return linea
     return None
 
+def menuDeComandos():
+    print("\n\n --------------------------------------------------------- \n\
+    Menu de comandos: \n \
+    - menu: Muestra el menu de comandos.\n \
+    - desactivar: Desactiva el mecanismo de seguridad \n \
+    - apagar: Apaga la alarma de seguridad. \n \
+    - temperatura: Mostrar temperatura. \n \
+    - humedad: Mostrar humedad. \n \
+    - activar: Activa el mecanismo de seguridad. \n \
+---------------------------------------------------------\n\n")
+    time.sleep(3)
+
+menuDeComandos()
+
 # Bucle principal para leer los datos
 while True:
     ahora = time.monotonic()
@@ -237,14 +259,20 @@ while True:
     elif comando == "desactivar":
         seguridad_activada = False
         print("Mecanismo de seguridad DESACTIVADO")
+    elif comando == "apagar":
+        parpadeando = False
+        ledNaranja.value = False
+        print("Alarma de seguridad apagada")
     elif comando == "temperatura":
         modoLectura = True
-        print("modo lectura TEMPERATURA activado")
-        mensajeDisplay("TENPERATURA")
+        print("Modo lectura TEMPERATURA activado")
+        mensajeDisplay("TENPERATURA") #Mostramos N en vez de M porque no hay M en el display de 7 segmentos
     elif comando == "humedad":
         modoLectura = False
-        print("modo lectura HUMEDAD activado")
-        mensajeDisplay("HUNEDAD")
+        print("Modo lectura HUMEDAD activado")
+        mensajeDisplay("HUNEDAD") #Mostramos N en vez de M porque no hay M en el display de 7 segmentos
+    elif comando == "menu":
+        menuDeComandos()
 
     # Leer sensor DHT11 cada intervalo_lectura segundos
     if ahora - ultimo_tiempo_lectura >= intervalo_lectura:
@@ -256,8 +284,10 @@ while True:
 
             if modoLectura:
                 alarmaTemperatura(temperatura)
+                mostrarTemperaturaHumedad(temperatura)
             else:
                 alarmaHumedad(humedad)
+                mostrarTemperaturaHumedad(humedad)
 
         except RuntimeError as error:
             print(error.args[0])
@@ -266,17 +296,12 @@ while True:
     valor = sensorInfrarojo.value
     detectado = (valor == False)
     if detectado and seguridad_activada and not parpadeando:
-        parpadeando = True
-        fin_parpadeo = ahora + 5
-        ultimo_cambio = ahora
-        ledNaranja.value = True
         print("Intruso DETECTADO")
         mensajeDisplay("INTRUSO DETECTADO")
-
-    if parpadeando:
-        if ahora - ultimo_cambio >= intervalo:
-            ledNaranja.value = not ledNaranja.value
-            ultimo_cambio = ahora
-        if ahora >= fin_parpadeo:
-            parpadeando = False
-            ledNaranja.value = False
+        parpadeando = True
+        ledNaranja.value = True
+        ultimo_cambio = ahora
+        
+    if parpadeando and ahora - ultimo_cambio >= intervalo:
+        ledNaranja.value = not ledNaranja.value
+        ultimo_cambio = ahora
