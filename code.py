@@ -69,6 +69,9 @@ segmentos = {
     ' ': (False, False, False, False, False, False, False),
 }
 
+#Variable para activar y desactivar la impresion constante por consola de la temperatura y humedad
+mostrarPorConsola = True
+
 # Variables para controlar cuándo mostrar mensajes de alarma
 rango_temperatura_anterior = None
 rango_humedad_anterior = None
@@ -234,15 +237,17 @@ def leer_comando():
     return None
 
 def menuDeComandos():
-    print("\n\n --------------------------------------------------------- \n\
+    print("\n\n ------------------------------------------------------------------ \n\
     Menu de comandos: \n \
     - menu: Muestra el menu de comandos.\n \
-    - desactivar: Desactiva el mecanismo de seguridad \n \
-    - apagar: Apaga la alarma de seguridad. \n \
-    - temperatura: Mostrar temperatura. \n \
-    - humedad: Mostrar humedad. \n \
-    - activar: Activa el mecanismo de seguridad. \n \
----------------------------------------------------------\n\n")
+    - activar-seguridad: Activa el mecanismo de seguridad. \n \
+    - desactivar-seguridad: Desactiva el mecanismo de seguridad \n \
+    - apagar-alarma: Apaga la alarma de seguridad. \n \
+    - temperatura: Mostrar temperatura por display. \n \
+    - humedad: Mostrar humedad por display. \n \
+    - activar-consola: Activa la impresión por consola de temperatura y humedad. \n \
+    - desactivar-consola: Desactiva la impresión por consola de temperatura y humedad. \n \
+------------------------------------------------------------------\n\n")
     time.sleep(3)
 
 menuDeComandos()
@@ -253,13 +258,13 @@ while True:
 
     # Leer comandos del usuario
     comando = leer_comando()
-    if comando == "activar":
+    if comando == "activar-seguridad":
         seguridad_activada = True
         print("Mecanismo de seguridad ACTIVADO")
-    elif comando == "desactivar":
+    elif comando == "desactivar-seguridad":
         seguridad_activada = False
         print("Mecanismo de seguridad DESACTIVADO")
-    elif comando == "apagar":
+    elif comando == "apagar-alarma":
         parpadeando = False
         ledNaranja.value = False
         print("Alarma de seguridad apagada")
@@ -273,14 +278,22 @@ while True:
         mensajeDisplay("HUNEDAD") #Mostramos N en vez de M porque no hay M en el display de 7 segmentos
     elif comando == "menu":
         menuDeComandos()
+    elif comando == "activar-consola":
+        mostrarPorConsola = True
+        print("Mostrar por consola ACTIVADO")
+    elif comando == "desactivar-consola":
+        mostrarPorConsola = False
+        print("Mostrar por consola DESACTIVADO")
 
     # Leer sensor DHT11 cada intervalo_lectura segundos
     if ahora - ultimo_tiempo_lectura >= intervalo_lectura:
         try:
             temperatura = sensorTemperatura.temperature
             humedad = sensorTemperatura.humidity
-            print(f"Temperatura: {temperatura}°C")
-            print(f"Humedad: {humedad}%")
+
+            if mostrarPorConsola:
+                print(f"Temperatura: {temperatura}°C")
+                print(f"Humedad: {humedad}%")
 
             if modoLectura:
                 alarmaTemperatura(temperatura)
