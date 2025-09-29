@@ -5,6 +5,7 @@ import digitalio # Para manejo de entradas y salidas digitales
 import wifi
 import socketpool
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
+import json
 
 
 # Configuración de RED
@@ -51,11 +52,11 @@ def publish():
    
     if now - last_pub >= PUB_INTERVAL:
         try:
-            temp_topic = f"{TOPIC}/Temperatura (°C)" 
-            mqtt_client.publish(temp_topic, str([temperatura]))
+            temp_topic = f"{TOPIC}/temperatura" 
+            mqtt_client.publish(temp_topic, str(temperatura))
             
-            hum_topic = f"{TOPIC}/Humedad (%)" 
-            mqtt_client.publish(hum_topic, str([humedad]))
+            hum_topic = f"{TOPIC}/humedad" 
+            mqtt_client.publish(hum_topic, str(humedad))
             
             last_pub = now
           
