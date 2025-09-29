@@ -2,6 +2,66 @@ import board # Carga el módulo de los nombres de los pines (GP0, GP1, etc.)
 import time # Carga el módulo de las pausas (sleep)
 import adafruit_dht # Carga el driver del sensor DHT (DHT11/DHT22)
 import digitalio # Para manejo de entradas y salidas digitales
+import wifi
+import socketpool
+import adafruit_minimqtt.adafruit_minimqtt as MQTT
+
+
+# Configuración de RED
+SSID = "Tu wifi"
+PASSWORD = "Contraseña de tu wifi"
+BROKER = "La IPv4 de la pc donde corre mosquitto. Win: ipconfig o Linux: ip addr"  
+NOMBRE_EQUIPO = "NKC"
+DESCOVERY_TOPIC = "descubrir"
+TOPIC = f"sensores/{NOMBRE_EQUIPO}"
+
+print(f"Intentando conectar a {SSID}...")
+try:
+    wifi.radio.connect(SSID, PASSWORD)
+    print(f"Conectado a {SSID}")
+    print(f"Dirección IP: {wifi.radio.ipv4_address}")
+except Exception as e:
+    print(f"Error al conectar a WiFi: {e}")
+    while True:
+        pass 
+
+# Configuración MQTT 
+pool = socketpool.SocketPool(wifi.radio)
+
+def connect(client, userdata, flags, rc):
+    print("Conectado al broker MQTT")
+    client.publish(DESCOVERY_TOPIC, json.dumps({"equipo":NOMBRE_EQUIPO,"magnitudes": ["temperatura", "humedad"]}))
+
+mqtt_client = MQTT.MQTT(
+    broker=BROKER,
+    port=1883,
+    socket_pool=pool
+)
+
+mqtt_client.on_connect = connect
+mqtt_client.connect()
+
+# Usamos estas varaibles globales para controlar cada cuanto publicamos
+LAST_PUB = 0
+PUB_INTERVAL = 5  
+
+def publish():
+    global last_pub
+    now = time.monotonic()
+   
+    if now - last_pub >= PUB_INTERVAL:
+        try:
+            temp_topic = f"{TOPIC}/Temperatura (°C)" 
+            mqtt_client.publish(temp_topic, str([temperatura]))
+            
+            hum_topic = f"{TOPIC}/Humedad (%)" 
+            mqtt_client.publish(hum_topic, str([humedad]))
+            
+            last_pub = now
+          
+        except Exception as e:
+            print(f"Error publicando MQTT: {e}")
+
 
 sensorTemperatura = adafruit_dht.DHT11(board.GP26)
 
@@ -73,22 +133,22 @@ segmentos = {
 mostrarPorConsola = True
 
 # Variables para controlar cuándo mostrar mensajes de alarma
-rango_temperatura_anterior = None
-rango_humedad_anterior = None
+rangoTemperaturaAnterior = None
+rangoHumedadAnterior = None
 
 # Variable de estado del mecanismo de seguridad
-seguridad_activada = True
+seguridadActivada = True
 
 # Variable para alternar entre modo temperatura y modo humedad
 modoLectura = True 
 
 # Variables para temporización no bloqueante
-intervalo_lectura = 2.0  # segundos
-ultimo_tiempo_lectura = time.monotonic()
+intervaloLectura = 2.0  # segundos
+ultimoTiempoLectura = time.monotonic()
 
 # Variables para parpadeo no bloqueante
 parpadeando = False
-ultimo_cambio = 0
+ultimoCambio = 0
 intervalo = 0.2
 
 def inicializarPinesDisplay(pinesDisplay,anodo):
@@ -143,7 +203,7 @@ def mostrarTemperaturaHumedad(valor):
     mostrarCaracter(valor2, False)
 
 def alarmaTemperatura(temperatura):
-    global rango_temperatura_anterior
+    global rangoTemperaturaAnterior
     
     ledAzul.value = False
     ledVerde.value = False
@@ -181,12 +241,12 @@ def alarmaTemperatura(temperatura):
         rango_actual = "fuera-rango"
         mensaje = "Valores fuera de rango definidos."
 
-    if rango_actual != rango_temperatura_anterior:
+    if rango_actual != rangoTemperaturaAnterior:
         print(mensaje)
-        rango_temperatura_anterior = rango_actual
+        rangoTemperaturaAnterior = rango_actual
 
 def alarmaHumedad(humedad):
-    global rango_humedad_anterior
+    global rangoHumedadAnterior
     
     ledAzul.value = False
     ledVerde.value = False
@@ -224,9 +284,9 @@ def alarmaHumedad(humedad):
         rango_actual = "fuera-rango"
         mensaje = "Valores fuera de rango definidos."
 
-    if rango_actual != rango_humedad_anterior:
+    if rango_actual != rangoHumedadAnterior:
         print(mensaje)
-        rango_humedad_anterior = rango_actual
+        rangoHumedadAnterior = rango_actual
 
 # Función para leer comandos del monitor serie
 def leer_comando():
@@ -259,10 +319,10 @@ while True:
     # Leer comandos del usuario
     comando = leer_comando()
     if comando == "activar-seguridad":
-        seguridad_activada = True
+        seguridadActivada = True
         print("Mecanismo de seguridad ACTIVADO")
     elif comando == "desactivar-seguridad":
-        seguridad_activada = False
+        seguridadActivada = False
         print("Mecanismo de seguridad DESACTIVADO")
     elif comando == "apagar-alarma":
         parpadeando = False
@@ -285,8 +345,8 @@ while True:
         mostrarPorConsola = False
         print("Mostrar por consola DESACTIVADO")
 
-    # Leer sensor DHT11 cada intervalo_lectura segundos
-    if ahora - ultimo_tiempo_lectura >= intervalo_lectura:
+    # Leer sensor DHT11 cada intervaloLectura segundos
+    if ahora - ultimoTiempoLectura >= intervaloLectura:
         try:
             temperatura = sensorTemperatura.temperature
             humedad = sensorTemperatura.humidity
@@ -304,17 +364,19 @@ while True:
 
         except RuntimeError as error:
             print(error.args[0])
-        ultimo_tiempo_lectura = ahora
+        ultimoTiempoLectura = ahora
 
     valor = sensorInfrarojo.value
     detectado = (valor == False)
-    if detectado and seguridad_activada and not parpadeando:
+    if detectado and seguridadActivada and not parpadeando:
         print("Intruso DETECTADO")
         mensajeDisplay("INTRUSO DETECTADO")
         parpadeando = True
         ledNaranja.value = True
-        ultimo_cambio = ahora
+        ultimoCambio = ahora
         
-    if parpadeando and ahora - ultimo_cambio >= intervalo:
+    if parpadeando and ahora - ultimoCambio >= intervalo:
         ledNaranja.value = not ledNaranja.value
-        ultimo_cambio = ahora
+        ultimoCambio = ahora
+
+    publish()
