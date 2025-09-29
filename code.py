@@ -8,9 +8,9 @@ import adafruit_minimqtt.adafruit_minimqtt as MQTT
 
 
 # Configuración de RED
-SSID = "Tu wifi"
-PASSWORD = "Contraseña de tu wifi"
-BROKER = "La IPv4 de la pc donde corre mosquitto. Win: ipconfig o Linux: ip addr"  
+SSID = "wfrre-Docentes"
+PASSWORD = "20$tscFrre.24"
+BROKER = "10.13.100.154"  
 NOMBRE_EQUIPO = "NKC"
 DESCOVERY_TOPIC = "descubrir"
 TOPIC = f"sensores/{NOMBRE_EQUIPO}"
