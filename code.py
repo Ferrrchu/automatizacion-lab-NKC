@@ -259,27 +259,27 @@ def alarmaHumedad(humedad):
         ledAzul.value = True
         ledVerde.value = True
         ledBlanco.value = True
-        mensaje = "ALERTA: humedad mínima"
+        mensaje = "ALERTA: Humedad extremadamente baja"
     elif 40 < humedad <= 45:
         rango_actual = "intermedia-baja"
         ledVerde.value = True
         ledBlanco.value = True
-        mensaje = "ALERTA: humedad intermedia-baja"
+        mensaje = "ALERTA: Humedad baja"
     elif 45 < humedad <= 55:
         rango_actual = "normal"
         ledBlanco.value = True
-        mensaje = "Humedad estándar"
+        mensaje = "Humedad normal"
     elif 55 < humedad <= 60:
         rango_actual = "intermedia-alta"
         ledBlanco.value = True
         ledAmarillo.value = True
-        mensaje = "ALERTA: humedad intermedia-alta"
+        mensaje = "ALERTA: Humedad alta"
     elif humedad > 60:
         rango_actual = "maxima"
         ledBlanco.value = True
         ledAmarillo.value = True
         ledRojo.value = True
-        mensaje = "ALERTA: humedad máxima"
+        mensaje = "ALERTA: Humedad extremadamente alta"
     else:
         rango_actual = "fuera-rango"
         mensaje = "Valores fuera de rango definidos."
